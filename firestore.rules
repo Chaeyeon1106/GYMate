@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(groupId) {
+      return isSignedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+    }
+
+    // 사용자 프로필: 그룹원끼리 이름을 보여주기 위해 로그인한 누구나 읽을 수 있고,
+    // 본인 문서만 쓸 수 있다.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // 그룹: 단일 문서 조회(get)는 멤버만 가능하도록 보호.
+    // 목록 조회(list)는 초대코드로 그룹을 찾는 기능(가입 전 상태) 때문에
+    // 로그인한 사용자에게 열어둔다 — Firestore는 list 쿼리에서 get()으로
+    // 문서마다 다른 대상을 조회하는 규칙을 증명할 수 없어 멤버십 검사를 걸면
+    // 쿼리 자체가 permission-denied로 거부된다. 그룹 데이터는 이름/코드/멤버
+    // 목록 정도라 민감정보가 아니라서 이 정도 개방은 허용 가능한 범위.
+    match /groups/{groupId} {
+      allow get: if isMember(groupId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      // 업데이트는 세 가지 경우만 허용: (1) 초대코드로 새 멤버 한 명이 자기
+      // uid를 memberUids에 추가하는 경우, (2) 그룹장이 이름을 바꾸는 경우
+      // (그때는 memberUids가 그대로여야 한다), (3) 본인이 그룹을 탈퇴하는
+      // 경우(자기 uid만 제거되고, 그룹장이었다면 남은 멤버 중 한 명에게
+      // 그룹장을 넘겨야 한다 — 마지막 1명이 탈퇴하는 경우는 문서를 통째로
+      // 삭제하는 방식으로 처리하므로 여기서는 다루지 않는다).
+      allow update: if isSignedIn() && (
+        (request.resource.data.memberUids.hasAll(resource.data.memberUids) &&
+         request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 &&
+         request.auth.uid in request.resource.data.memberUids)
+        ||
+        (request.auth.uid == resource.data.ownerUid &&
+         request.resource.data.memberUids == resource.data.memberUids)
+        ||
+        (request.auth.uid in resource.data.memberUids &&
+         !(request.auth.uid in request.resource.data.memberUids) &&
+         request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
+         request.resource.data.memberUids.size() > 0 &&
+         resource.data.memberUids.hasAll(request.resource.data.memberUids) &&
+         request.resource.data.ownerUid in request.resource.data.memberUids)
+      );
+      // 삭제는 (1) 그룹의 마지막 한 명이 탈퇴하는 경우, 또는 (2) 그룹장이
+      // "잘못 만든 그룹 삭제하기"로 인원 수와 상관없이 통째로 삭제하는
+      // 경우에 허용한다.
+      allow delete: if isSignedIn() && (
+        (resource.data.memberUids.size() == 1 && resource.data.memberUids[0] == request.auth.uid) ||
+        request.auth.uid == resource.data.ownerUid
+      );
+    }
+
+    // 방문 일정: 그룹원 전체가 조회, 본인 것만 생성/수정/삭제 (문서ID = uid_날짜)
+    // groups/{groupId}/schedule 형태의 하위 컬렉션이라 groupId가 쿼리 경로 자체로
+    // 고정되므로 get()을 쓰는 isMember() 검사가 list 쿼리에도 안전하게 적용된다.
+    match /groups/{groupId}/schedule/{scheduleId} {
+      allow read: if isMember(groupId);
+      allow create, update: if isMember(groupId) &&
+        request.resource.data.uid == request.auth.uid &&
+        scheduleId == request.auth.uid + '_' + request.resource.data.date;
+      allow delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
+    }
+
+    // 운동/식단 기록: 생성/수정/삭제(단일 문서 요청)는 get()으로 멤버십을
+    // 안전하게 검사할 수 있어 그룹원 + 본인 것만 가능하도록 강하게 제한한다.
+    // 반면 조회(list, 피드 목록)는 get()과 resource.data 조건을 같이 쓰면
+    // Firestore가 list 쿼리를 증명할 수 없어 전체가 permission-denied로
+    // 거부되므로, get() 없이 resource.data만으로 판단한다: 공개(group)
+    // 글은 로그인한 사용자면 열람 가능, 비공개(private) 글은 작성자 본인만.
+    // (공개 글은 그룹 밖 사용자도 경로를 정확히 알면 이론상 읽을 수 있지만,
+    // 초대 코드로만 가입하는 폐쇄형 친구 그룹 앱이라 실질 위험은 낮다.)
+    // taggedUids: 함께 운동한 친구로 태그된 사람들 — 비공개(private) 글이라도
+    // 태그된 본인은 볼 수 있어야 하므로 세 번째 조건으로 추가. 태그 기능
+    // 이전에 만들어진 문서는 이 필드가 없지만, 그런 문서는 앞의 두 조건
+    // (visibility=='group' 이거나 본인 글)으로 먼저 판가름 나 || 단락평가로
+    // 세 번째 조건까지 갈 일이 없다.
+    match /groups/{groupId}/workoutLogs/{logId} {
+      allow read: if isSignedIn() &&
+        (resource.data.visibility == 'group' || resource.data.uid == request.auth.uid ||
+         request.auth.uid in resource.data.taggedUids);
+      allow create: if isMember(groupId) && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
+    }
+
+    match /groups/{groupId}/mealLogs/{logId} {
+      allow read: if isSignedIn() &&
+        (resource.data.visibility == 'group' || resource.data.uid == request.auth.uid);
+      allow create: if isMember(groupId) && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
+    }
+
+    // 그룹 채팅: schedule과 같은 이유로 groupId가 경로에 고정된 하위 컬렉션이라
+    // get() 기반 isMember() 검사만으로 list 쿼리도 안전하게 동작한다.
+    match /groups/{groupId}/messages/{messageId} {
+      allow read: if isMember(groupId);
+      allow create: if isMember(groupId) && request.resource.data.uid == request.auth.uid;
+      allow delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
+    }
+  }
+}

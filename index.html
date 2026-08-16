@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>GYMate · 헬스장 친구들과 함께</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="images/icon-192.png" />
+<link rel="apple-touch-icon" href="images/icon-192.png" />
+<meta name="theme-color" content="#14151a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="GYMate" />
+<script>
+  document.documentElement.setAttribute("data-theme", localStorage.getItem("gymate-theme") || "dark");
+</script>
+</head>
+<body>
+
+  <!-- ===== 로그인 / 회원가입 ===== -->
+  <div id="auth-screen" class="screen hidden">
+    <div class="auth-card">
+      <h1 class="brand">GYM<span>ate</span></h1>
+      <p class="tagline">친구들과 함께, 오늘도 운동 인증 🔥</p>
+
+      <form id="login-form" class="auth-form">
+        <input id="login-email" type="email" placeholder="이메일" autocomplete="email" required />
+        <input id="login-password" type="password" placeholder="비밀번호" autocomplete="current-password" required />
+        <button type="submit" class="btn-primary">로그인</button>
+        <p class="switch-text">계정이 없나요? <a href="#" id="show-signup">회원가입</a></p>
+      </form>
+
+      <form id="signup-form" class="auth-form hidden">
+        <input id="signup-name" type="text" placeholder="닉네임" required />
+        <input id="signup-email" type="email" placeholder="이메일" autocomplete="email" required />
+        <input id="signup-password" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="new-password" required />
+
+        <label class="field-label">내 색깔 고르기</label>
+        <div id="signup-color-picker" class="color-picker">
+          <button type="button" class="color-swatch selected" data-color="#ff5e3a" style="background:#ff5e3a"></button>
+          <button type="button" class="color-swatch" data-color="#b6ff3b" style="background:#b6ff3b"></button>
+          <button type="button" class="color-swatch" data-color="#3ac6ff" style="background:#3ac6ff"></button>
+          <button type="button" class="color-swatch" data-color="#ff9f3a" style="background:#ff9f3a"></button>
+          <button type="button" class="color-swatch" data-color="#c47bff" style="background:#c47bff"></button>
+          <button type="button" class="color-swatch" data-color="#3affc4" style="background:#3affc4"></button>
+        </div>
+
+        <button type="submit" class="btn-primary">회원가입</button>
+        <p class="switch-text">이미 계정이 있나요? <a href="#" id="show-login">로그인</a></p>
+      </form>
+
+      <p id="auth-error" class="error-text hidden"></p>
+    </div>
+  </div>
+
+  <!-- ===== 그룹 생성 / 참여 ===== -->
+  <div id="group-screen" class="screen hidden">
+    <div class="auth-card">
+      <h1 class="brand">GYM<span>ate</span></h1>
+      <h2 class="screen-subtitle">운동 그룹을 만들거나 참여하세요</h2>
+
+      <div class="group-tabs">
+        <button type="button" class="group-tab active" data-group-tab="create">그룹 만들기</button>
+        <button type="button" class="group-tab" data-group-tab="join">코드로 참여</button>
+      </div>
+
+      <form id="group-create-form" class="auth-form">
+        <input id="group-name-input" type="text" placeholder="그룹 이름 (예: 헬창모임)" required />
+        <button type="submit" class="btn-primary">그룹 생성</button>
+      </form>
+
+      <form id="group-join-form" class="auth-form hidden">
+        <input id="group-code-input" type="text" placeholder="6자리 초대코드" maxlength="6" required />
+        <button type="submit" class="btn-primary">참여하기</button>
+      </form>
+
+      <p id="group-error" class="error-text hidden"></p>
+      <button type="button" id="group-back-btn" class="btn-text hidden">‹ 뒤로가기</button>
+      <button type="button" id="group-logout-btn" class="btn-text">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- ===== 메인 앱 ===== -->
+  <div id="app" class="screen hidden">
+    <header class="app-header">
+      <h1 class="brand-small">GYM<span>ate</span></h1>
+      <div class="header-right">
+        <span id="user-name" class="user-name"></span>
+        <button id="logout-btn" class="text-btn">로그아웃</button>
+      </div>
+    </header>
+
+    <main id="tab-content">
+
+      <!-- 캘린더 탭 -->
+      <section id="tab-calendar" class="tab-panel active">
+        <div class="today-upload-card">
+          <div>
+            <p class="card-title">오늘 방문 시간 등록하기</p>
+            <p class="card-sub" id="today-date-label"></p>
+          </div>
+          <button id="quick-schedule-btn" class="btn-accent">🕐 방문시간 등록</button>
+        </div>
+
+        <div class="calendar-card">
+          <div class="calendar-nav">
+            <button type="button" id="cal-prev" class="icon-btn">‹</button>
+            <span id="cal-month-label" class="calendar-month-label"></span>
+            <button type="button" id="cal-next" class="icon-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+        </div>
+
+        <div id="day-detail" class="day-detail hidden">
+          <div class="day-detail-header">
+            <h3 id="day-detail-date"></h3>
+            <button type="button" id="day-detail-close" class="icon-btn">✕</button>
+          </div>
+          <div id="day-schedule-list" class="schedule-list"></div>
+          <button type="button" id="add-schedule-btn" class="btn-secondary full-width">+ 내 방문 시간 등록</button>
+
+          <div id="day-logs-preview" class="day-logs-preview"></div>
+        </div>
+      </section>
+
+      <!-- 운동 기록 탭 -->
+      <section id="tab-workouts" class="tab-panel">
+        <div class="today-upload-card">
+          <div>
+            <p class="card-title">오늘의 운동 기록 추가</p>
+            <p class="card-sub" id="workout-today-date-label"></p>
+          </div>
+          <button id="quick-photo-btn" class="btn-accent">📸 인증사진 올리기</button>
+        </div>
+
+        <div class="calendar-card">
+          <div class="calendar-nav">
+            <button type="button" id="workout-week-prev" class="icon-btn">‹</button>
+            <span id="workout-week-label" class="calendar-month-label"></span>
+            <button type="button" id="workout-week-next" class="icon-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="workout-week-grid" class="calendar-grid"></div>
+        </div>
+
+        <div class="filter-bar">
+          <span id="workout-filter-label"></span>
+        </div>
+
+        <div id="workout-feed" class="feed">
+          <p class="empty-state">아직 기록이 없어요. 첫 운동을 기록해보세요!</p>
+        </div>
+      </section>
+
+      <!-- 식단 탭 -->
+      <section id="tab-meals" class="tab-panel">
+        <div class="calendar-card">
+          <div class="calendar-nav">
+            <button type="button" id="meal-week-prev" class="icon-btn">‹</button>
+            <span id="meal-week-label" class="calendar-month-label"></span>
+            <button type="button" id="meal-week-next" class="icon-btn">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="meal-week-grid" class="calendar-grid"></div>
+        </div>
+
+        <div class="filter-bar">
+          <span id="meal-filter-label"></span>
+        </div>
+
+        <button type="button" id="add-meal-btn" class="btn-accent full-width">+ 식단 기록 추가</button>
+        <div id="meal-feed" class="feed">
+          <p class="empty-state">아직 기록이 없어요. 오늘 먹은 걸 기록해보세요!</p>
+        </div>
+      </section>
+
+      <!-- 채팅 탭 -->
+      <section id="tab-chat" class="tab-panel chat-panel">
+        <div id="chat-messages" class="chat-messages"></div>
+        <button type="button" id="chat-jump-bottom" class="chat-jump-btn hidden">⬇</button>
+        <form id="chat-form" class="chat-input-bar">
+          <input id="chat-input" type="text" placeholder="메시지 보내기" maxlength="500" autocomplete="off" required />
+          <button type="submit" class="chat-send-btn">➤</button>
+        </form>
+      </section>
+
+      <!-- 마이 탭 -->
+      <section id="tab-profile" class="tab-panel">
+        <div class="profile-card">
+          <div class="profile-avatar-wrap">
+            <img id="profile-avatar-img" class="profile-avatar-img hidden" alt="프로필 사진" />
+            <div id="profile-avatar-fallback" class="profile-avatar">💪</div>
+            <label for="profile-photo-input" class="avatar-edit-btn">📷</label>
+            <input id="profile-photo-input" type="file" accept="image/*" class="hidden" />
+          </div>
+          <input id="profile-name-input" class="profile-name-input" type="text" placeholder="닉네임" maxlength="20" />
+          <textarea id="profile-bio-input" class="profile-bio-input" placeholder="한줄소개를 적어보세요" rows="2" maxlength="60"></textarea>
+          <button type="button" id="profile-save-btn" class="btn-secondary full-width">프로필 저장</button>
+        </div>
+
+        <div class="goal-card">
+          <label for="goal-input">🎯 내 운동 목표</label>
+          <div class="goal-row">
+            <input id="goal-input" type="text" placeholder="예: 주 3회, 벤치프레스 60kg 달성" />
+            <button type="button" id="goal-save-btn" class="btn-secondary">저장</button>
+          </div>
+        </div>
+
+        <div class="group-switcher-card">
+          <p class="card-title">내 그룹</p>
+          <div id="group-switcher-list" class="group-switcher-list"></div>
+          <button type="button" id="add-group-btn" class="btn-secondary full-width">+ 새 그룹 만들기 · 참여하기</button>
+        </div>
+
+        <div class="group-card">
+          <div class="group-name-row">
+            <p class="card-title" id="group-name-display">그룹</p>
+            <button type="button" id="group-name-edit-btn" class="icon-btn hidden">✎</button>
+          </div>
+          <div id="group-name-edit-row" class="group-name-edit-row hidden">
+            <input id="group-rename-input" type="text" maxlength="20" />
+            <button type="button" id="group-name-save-btn" class="btn-secondary">저장</button>
+          </div>
+          <p class="card-sub">그룹원 <span id="member-count">0</span>명</p>
+          <div id="member-list" class="member-list"></div>
+          <button type="button" id="leave-group-btn" class="btn-text-sm">이 그룹 탈퇴하기</button>
+          <button type="button" id="delete-group-btn" class="btn-text-sm hidden">이 그룹 삭제하기 (그룹장 전용)</button>
+        </div>
+
+        <div class="invite-card">
+          <p class="card-title">친구 초대 코드</p>
+          <p class="card-sub">이 코드를 친구에게 공유해서 그룹에 초대하세요</p>
+          <div class="invite-code" id="invite-code-display">------</div>
+          <button type="button" id="copy-code-btn" class="btn-secondary full-width">코드 복사</button>
+          <button type="button" id="share-invite-btn" class="btn-secondary full-width">🔗 링크로 초대하기</button>
+        </div>
+
+        <div class="theme-card">
+          <p class="card-title">테마</p>
+          <div class="visibility-toggle">
+            <button type="button" class="vis-btn" data-theme-btn="dark">🌙 다크</button>
+            <button type="button" class="vis-btn" data-theme-btn="light">☀️ 라이트</button>
+          </div>
+        </div>
+
+        <div class="theme-card">
+          <p class="card-title">알림</p>
+          <p class="card-sub" id="push-status-label">채팅 메시지 · 태그 알림을 받아보세요</p>
+          <button type="button" id="enable-push-btn" class="btn-secondary full-width">🔔 알림 켜기</button>
+          <button type="button" id="disable-push-btn" class="btn-secondary full-width hidden">🔕 알림 끄기</button>
+        </div>
+
+        <button type="button" id="logout-btn-2" class="btn-secondary full-width">로그아웃</button>
+      </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+      <button type="button" class="nav-btn active" data-tab="tab-calendar"><span class="nav-icon">📅</span>캘린더</button>
+      <button type="button" class="nav-btn" data-tab="tab-workouts"><span class="nav-icon">🏋️</span>운동기록</button>
+      <button type="button" class="nav-btn" data-tab="tab-meals"><span class="nav-icon">🍱</span>식단</button>
+      <button type="button" class="nav-btn" data-tab="tab-chat"><span class="nav-icon">💬</span>채팅</button>
+      <button type="button" class="nav-btn" data-tab="tab-profile"><span class="nav-icon">👤</span>마이</button>
+    </nav>
+  </div>
+
+  <!-- ===== 모달: 일정 등록 ===== -->
+  <div id="modal-schedule" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>방문 시간 등록</h3>
+        <button type="button" class="icon-btn modal-close" data-modal="modal-schedule">✕</button>
+      </div>
+      <form id="schedule-form">
+        <label class="field-label" id="schedule-date-label"></label>
+        <button type="button" id="schedule-resting-toggle" class="vis-btn full-width">😴 오늘은 쉬어요</button>
+        <input id="schedule-time" type="time" required />
+        <textarea id="schedule-note" placeholder="메모 (선택, 예: 하체 하는 날)" rows="2"></textarea>
+        <div class="modal-actions">
+          <button type="button" id="schedule-delete-btn" class="btn-danger hidden">삭제</button>
+          <button type="submit" class="btn-primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== 모달: 운동 기록 추가 ===== -->
+  <div id="modal-workout" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="workout-modal-title">운동 기록 추가</h3>
+        <button type="button" class="icon-btn modal-close" data-modal="modal-workout">✕</button>
+      </div>
+      <form id="workout-form">
+        <label class="field-label">날짜</label>
+        <input id="workout-date" type="date" required />
+
+        <label class="field-label">운동 시간 (분)</label>
+        <input id="workout-duration" type="number" min="1" placeholder="예: 60" required />
+
+        <label class="field-label">장소</label>
+        <input id="workout-location" type="text" placeholder="예: OO헬스장" required />
+
+        <label class="field-label">메모</label>
+        <textarea id="workout-memo" placeholder="오늘 어떤 운동을 했나요?" rows="2"></textarea>
+
+        <label class="field-label">피드백 (아쉬웠던 점 · 개선할 점)</label>
+        <textarea id="workout-feedback" placeholder="예: 힙쓰러스트할 때 고관절 덜 접힘, 랫풀다운할 때 견갑 조절 신경쓰기" rows="2"></textarea>
+
+        <label class="field-label">함께 운동한 친구 (선택)</label>
+        <div id="workout-tag-friends" class="tag-friend-list"></div>
+
+        <label class="field-label">인증사진</label>
+        <input id="workout-photo" type="file" accept="image/*" class="hidden" />
+        <label for="workout-photo" class="btn-secondary full-width">📷 사진 선택</label>
+        <div id="workout-photo-preview-wrap" class="photo-preview-wrap hidden">
+          <img id="workout-photo-preview" class="photo-preview" alt="미리보기" />
+          <span class="photo-position-hint">드래그해서 보여줄 부분 조정</span>
+          <button type="button" id="workout-photo-clear" class="photo-clear-btn">✕</button>
+        </div>
+
+        <div class="visibility-toggle">
+          <button type="button" class="vis-btn active" data-visibility="group">👥 그룹에 공개</button>
+          <button type="button" class="vis-btn" data-visibility="private">🔒 나만 보기</button>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary full-width">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== 모달: 식단 기록 추가 ===== -->
+  <div id="modal-meal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>식단 기록 추가</h3>
+        <button type="button" class="icon-btn modal-close" data-modal="modal-meal">✕</button>
+      </div>
+      <form id="meal-form">
+        <div class="field-row">
+          <div>
+            <label class="field-label">날짜</label>
+            <input id="meal-date" type="date" required />
+          </div>
+          <div>
+            <label class="field-label">시간</label>
+            <input id="meal-time" type="time" />
+          </div>
+        </div>
+
+        <label class="field-label">식사 종류</label>
+        <select id="meal-type">
+          <option value="아침">아침</option>
+          <option value="점심">점심</option>
+          <option value="저녁">저녁</option>
+          <option value="간식">간식</option>
+        </select>
+
+        <div class="field-row">
+          <div>
+            <label class="field-label">칼로리 (kcal)</label>
+            <input id="meal-calories" type="number" min="0" placeholder="예: 450" />
+          </div>
+          <div>
+            <label class="field-label">단백질 (g)</label>
+            <input id="meal-protein" type="number" min="0" placeholder="예: 30" />
+          </div>
+        </div>
+
+        <label class="field-label">메모</label>
+        <textarea id="meal-memo" placeholder="무엇을 먹었나요?" rows="2"></textarea>
+
+        <label class="field-label">사진</label>
+        <input id="meal-photo" type="file" accept="image/*" class="hidden" />
+        <label for="meal-photo" class="btn-secondary full-width">📷 사진 선택</label>
+        <div id="meal-photo-preview-wrap" class="photo-preview-wrap hidden">
+          <img id="meal-photo-preview" class="photo-preview" alt="미리보기" />
+          <span class="photo-position-hint">드래그해서 보여줄 부분 조정</span>
+          <button type="button" id="meal-photo-clear" class="photo-clear-btn">✕</button>
+        </div>
+
+        <div class="visibility-toggle">
+          <button type="button" class="vis-btn active" data-visibility="group">👥 그룹에 공개</button>
+          <button type="button" class="vis-btn" data-visibility="private">🔒 나만 보기</button>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary full-width">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

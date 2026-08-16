@@ -1,0 +1,13 @@
+{
+  "name": "functions",
+  "description": "GYMate 푸시 알림용 Cloud Functions (채팅 메시지 / 운동기록 태그)",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.1.1"
+  },
+  "private": true
+}
