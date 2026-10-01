@@ -99,6 +99,15 @@ export function initWorkouts() {
     btn.addEventListener("click", () => setVisibility(btn.dataset.visibility, "#modal-workout"));
   });
 
+  // 장소 빠른 선택 버튼 — 누르면 장소 칸에 채워지고, 직접 입력도 그대로 가능하다.
+  document.querySelectorAll("#modal-workout .location-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      $("workout-location").value = btn.dataset.location;
+      syncLocationChips();
+    });
+  });
+  $("workout-location").addEventListener("input", syncLocationChips);
+
   $("workout-form").addEventListener("submit", onSubmitWorkout);
 
   $("workout-week-prev").addEventListener("click", () => shiftWeek(-1));
@@ -143,6 +152,7 @@ async function openWorkoutModal(log) {
     setVisibility("group", "#modal-workout");
   }
 
+  syncLocationChips();
   selectedFile = null;
   openModal("modal-workout");
   renderTagFriendList();
@@ -185,6 +195,13 @@ async function renderTagFriendList() {
         btn.classList.add("active");
       }
     });
+  });
+}
+
+function syncLocationChips() {
+  const current = $("workout-location").value.trim();
+  document.querySelectorAll("#modal-workout .location-chip").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.location === current);
   });
 }
 

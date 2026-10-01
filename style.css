@@ -1179,6 +1179,27 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent);
 }
 
+.location-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.location-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+}
+.location-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .visibility-toggle {
   display: flex;
   gap: 8px;
