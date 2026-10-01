@@ -1,0 +1,34 @@
+# main 브랜치에 푸시(PR 머지 포함)되면 화면(HTML/CSS/JS)만 Firebase Hosting에 자동 배포한다.
+# Cloud Functions와 보안 규칙은 자동 배포하지 않는다 — 필요할 때 직접 firebase deploy 할 것.
+# 필요한 설정: 저장소 Settings → Secrets and variables → Actions 에
+#   FIREBASE_SERVICE_ACCOUNT (Firebase 서비스 계정 JSON 키 내용 전체) 등록
+name: Deploy hosting to Firebase
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-hosting-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret 미등록 안내
+        if: env.HAS_SECRET != 'true'
+        run: echo "::warning::FIREBASE_SERVICE_ACCOUNT secret이 없어 배포를 건너뜁니다."
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: env.HAS_SECRET == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: gymate-6872e
+          channelId: live
