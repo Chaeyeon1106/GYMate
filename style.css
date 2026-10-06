@@ -352,6 +352,12 @@ input:focus, textarea:focus, select:focus {
   justify-content: space-between;
   gap: 12px;
   background: linear-gradient(135deg, var(--bg-elev), var(--accent-soft));
+  word-break: keep-all; /* 한글이 단어 중간에서 끊기지 않게 */
+}
+/* 버튼 문구는 한 줄로 유지하고, 줄바꿈이 필요하면 왼쪽 제목이 대신 넘어가게 한다 */
+.today-upload-card .btn-accent {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .card-title { font-weight: 700; font-size: 15px; }
 .card-sub { font-size: 13px; color: var(--text-mid); margin-top: 2px; }
