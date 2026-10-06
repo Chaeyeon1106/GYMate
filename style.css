@@ -339,7 +339,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ===== 카드 공용 ===== */
-.today-upload-card, .calendar-card, .goal-card, .invite-card, .profile-card, .day-detail, .theme-card, .group-card, .group-switcher-card {
+.today-upload-card, .calendar-card, .stats-card, .goal-card, .invite-card, .profile-card, .day-detail, .theme-card, .group-card, .group-switcher-card {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1205,6 +1205,122 @@ input:focus, textarea:focus, select:focus {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* ===== 운동인증 리액션 ===== */
+.reaction-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.reaction-btn {
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  font-size: 14px;
+  color: var(--text-mid);
+}
+.reaction-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.reaction-count { font-size: 12px; font-weight: 700; }
+.reaction-who {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+/* ===== 내 운동 통계 ===== */
+.stats-nav { margin-top: 10px; }
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+}
+.stat-label { font-size: 12px; color: var(--text-mid); }
+.stat-value { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.3; word-break: keep-all; }
+.stats-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-mid);
+  margin: 18px 0 8px;
+}
+.stats-heatmap {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.heat-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.heat-day.empty { background: transparent; }
+.heat-day.today { box-shadow: inset 0 0 0 2px var(--text-mid); }
+/* 한 가지 색(accent)의 진하기로 운동 시간을 표현: 0분 / ~30 / ~60 / ~90 / 90분+ */
+.heat-cell { background: var(--bg-elev-2); }
+.heat-cell.heat-1 { background: color-mix(in srgb, var(--accent) 25%, var(--bg-elev-2)); color: var(--text); }
+.heat-cell.heat-2 { background: color-mix(in srgb, var(--accent) 50%, var(--bg-elev-2)); color: var(--text); }
+.heat-cell.heat-3 { background: color-mix(in srgb, var(--accent) 75%, var(--bg-elev-2)); color: #fff; }
+.heat-cell.heat-4 { background: var(--accent); color: #fff; }
+.stats-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.stats-legend .heat-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.stat-bars { display: flex; flex-direction: column; gap: 8px; }
+.stat-bar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.stat-bar-label {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-elev-2);
+  overflow: hidden;
+}
+.stat-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.stat-bar-value { color: var(--text-mid); font-size: 12px; }
 
 .notify-prefs-title { margin-top: 14px; }
 .notify-prefs {

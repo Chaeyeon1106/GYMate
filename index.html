@@ -217,6 +217,38 @@
           </div>
         </div>
 
+        <div class="stats-card">
+          <p class="card-title">📊 내 운동 통계</p>
+          <p class="card-sub">지금 보고 있는 그룹의 기록 기준 (태그된 기록 포함)</p>
+          <div class="calendar-nav stats-nav">
+            <button type="button" id="stats-prev" class="icon-btn" aria-label="이전 달">‹</button>
+            <span id="stats-month-label" class="calendar-month-label"></span>
+            <button type="button" id="stats-next" class="icon-btn" aria-label="다음 달">›</button>
+          </div>
+          <div class="stat-tiles">
+            <div class="stat-tile"><span class="stat-label">운동한 날</span><span class="stat-value" id="stats-days">0일</span></div>
+            <div class="stat-tile"><span class="stat-label">총 운동 시간</span><span class="stat-value" id="stats-total">0분</span></div>
+            <div class="stat-tile"><span class="stat-label">1회 평균</span><span class="stat-value" id="stats-avg">-</span></div>
+          </div>
+
+          <p class="stats-section-title">날짜별 운동 시간</p>
+          <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="stats-heatmap" class="stats-heatmap"></div>
+          <div class="stats-legend" aria-hidden="true">
+            <span>적게</span>
+            <span class="heat-cell heat-1"></span><span class="heat-cell heat-2"></span><span class="heat-cell heat-3"></span><span class="heat-cell heat-4"></span>
+            <span>많이 (30분 단위)</span>
+          </div>
+
+          <p class="stats-section-title">장소별</p>
+          <div id="stats-locations" class="stat-bars"></div>
+
+          <p class="stats-section-title">운동 부위별</p>
+          <div id="stats-parts" class="stat-bars"></div>
+        </div>
+
         <div class="group-switcher-card">
           <p class="card-title">내 그룹</p>
           <div id="group-switcher-list" class="group-switcher-list"></div>
@@ -292,6 +324,7 @@
         <label class="field-label" id="schedule-date-label"></label>
         <button type="button" id="schedule-resting-toggle" class="vis-btn full-width">😴 오늘은 쉬어요</button>
         <input id="schedule-time" type="time" required />
+        <div id="schedule-time-chips" class="location-chips"></div>
         <textarea id="schedule-note" placeholder="메모 (선택, 예: 하체 하는 날)" rows="2"></textarea>
         <div class="modal-actions">
           <button type="button" id="schedule-delete-btn" class="btn-danger hidden">삭제</button>
@@ -321,6 +354,17 @@
           <button type="button" class="location-chip" data-location="바오짐">바오짐</button>
           <button type="button" class="location-chip" data-location="찬스짐">찬스짐</button>
           <button type="button" class="location-chip" data-location="야외러닝">야외러닝</button>
+        </div>
+
+        <label class="field-label">운동 부위 (여러 개 선택 가능)</label>
+        <div class="location-chips">
+          <button type="button" class="location-chip part-chip" data-part="하체">하체</button>
+          <button type="button" class="location-chip part-chip" data-part="등">등</button>
+          <button type="button" class="location-chip part-chip" data-part="가슴">가슴</button>
+          <button type="button" class="location-chip part-chip" data-part="어깨">어깨</button>
+          <button type="button" class="location-chip part-chip" data-part="팔">팔</button>
+          <button type="button" class="location-chip part-chip" data-part="복근">복근</button>
+          <button type="button" class="location-chip part-chip" data-part="유산소">유산소</button>
         </div>
 
         <label class="field-label">메모</label>

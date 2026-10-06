@@ -1,6 +1,7 @@
 import {
   collection,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -17,6 +18,7 @@ import {
 import { db, storage } from "./firebase-init.js";
 import { state } from "./state.js";
 import { loadGroupMembers } from "./auth.js";
+import { setStatsLogs } from "./stats.js";
 import {
   $,
   toDateStr,
@@ -42,6 +44,14 @@ let groupLogs = new Map();
 let myLogs = new Map();
 let taggedLogs = new Map();
 let selectedTaggedMembers = []; // [{uid, displayName, color}]
+let selectedParts = new Set(); // 운동 부위 (하체/등/...)
+// 리액션: groups/{groupId}/reactions/{logId}_{uid} = { logId, uid, displayName, emojis: [...] }
+let reactionsByLog = new Map(); // logId -> Map(uid -> { displayName, emojis })
+const REACTIONS = [
+  { key: "like", emoji: "👍" },
+  { key: "fire", emoji: "🔥" },
+  { key: "muscle", emoji: "💪" },
+];
 let unsubFeed = [];
 
 let currentWeekStart = startOfWeek(new Date());
@@ -88,6 +98,8 @@ export function initWorkouts() {
   $("workout-feed").addEventListener("click", (e) => {
     const deleteBtn = e.target.closest(".delete-btn");
     if (deleteBtn) onDeleteWorkout(deleteBtn.dataset.id);
+    const reactionBtn = e.target.closest(".reaction-btn");
+    if (reactionBtn) onToggleReaction(reactionBtn.dataset.logId, reactionBtn.dataset.reaction);
     const editBtn = e.target.closest(".edit-btn");
     if (editBtn) {
       const log = getAllItems().find((l) => l.id === editBtn.dataset.id);
@@ -100,13 +112,22 @@ export function initWorkouts() {
   });
 
   // 장소 빠른 선택 버튼 — 누르면 장소 칸에 채워지고, 직접 입력도 그대로 가능하다.
-  document.querySelectorAll("#modal-workout .location-chip").forEach((btn) => {
+  document.querySelectorAll("#modal-workout .location-chip[data-location]").forEach((btn) => {
     btn.addEventListener("click", () => {
       $("workout-location").value = btn.dataset.location;
       syncLocationChips();
     });
   });
   $("workout-location").addEventListener("input", syncLocationChips);
+
+  document.querySelectorAll("#modal-workout .part-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const part = btn.dataset.part;
+      if (selectedParts.has(part)) selectedParts.delete(part);
+      else selectedParts.add(part);
+      syncPartChips();
+    });
+  });
 
   $("workout-form").addEventListener("submit", onSubmitWorkout);
 
@@ -132,6 +153,7 @@ async function openWorkoutModal(log) {
     $("workout-memo").value = log.memo || "";
     $("workout-feedback").value = log.feedback || "";
     selectedTaggedMembers = [...(log.taggedMembers || [])];
+    selectedParts = new Set(log.parts || []);
     setVisibility(log.visibility || "group", "#modal-workout");
     if (editingPhotoURL) {
       $("workout-photo-preview").src = editingPhotoURL;
@@ -149,10 +171,12 @@ async function openWorkoutModal(log) {
     $("workout-location").value = "바오짐";
     $("workout-photo-preview-wrap").classList.add("hidden");
     selectedTaggedMembers = [];
+    selectedParts = new Set();
     setVisibility("group", "#modal-workout");
   }
 
   syncLocationChips();
+  syncPartChips();
   selectedFile = null;
   openModal("modal-workout");
   renderTagFriendList();
@@ -200,8 +224,14 @@ async function renderTagFriendList() {
 
 function syncLocationChips() {
   const current = $("workout-location").value.trim();
-  document.querySelectorAll("#modal-workout .location-chip").forEach((btn) => {
+  document.querySelectorAll("#modal-workout .location-chip[data-location]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.location === current);
+  });
+}
+
+function syncPartChips() {
+  document.querySelectorAll("#modal-workout .part-chip").forEach((btn) => {
+    btn.classList.toggle("active", selectedParts.has(btn.dataset.part));
   });
 }
 
@@ -244,6 +274,7 @@ async function onSubmitWorkout(e) {
       location,
       memo,
       feedback,
+      parts: [...selectedParts],
       photoURL,
       photoPosition,
       visibility: selectedVisibility,
@@ -313,6 +344,24 @@ function subscribeFeed() {
     snap.forEach((d) => taggedLogs.set(d.id, { id: d.id, ...d.data() }));
     afterDataChange();
   }));
+
+  reactionsByLog = new Map();
+  const reactionsQ = collection(db, "groups", state.groupId, "reactions");
+  unsubFeed.push(onSnapshot(
+    reactionsQ,
+    (snap) => {
+      reactionsByLog = new Map();
+      snap.forEach((d) => {
+        const r = d.data();
+        if (!r.emojis?.length) return;
+        if (!reactionsByLog.has(r.logId)) reactionsByLog.set(r.logId, new Map());
+        reactionsByLog.get(r.logId).set(r.uid, { displayName: r.displayName, emojis: r.emojis });
+      });
+      renderFeed();
+    },
+    // 리액션 보안 규칙이 아직 배포되지 않았으면 읽기가 거부된다 — 피드는 그대로 보여준다.
+    () => {}
+  ));
 }
 
 // 그룹을 전환했을 때 이전 그룹 구독을 정리하고 새 그룹(state.groupId) 기준으로
@@ -332,6 +381,12 @@ function afterDataChange() {
   rebuildWorkoutsByDate();
   renderWeekGrid();
   renderFeed();
+  // 통계용: 내 기록 + 내가 태그된 남의 기록 (isMine으로 구분)
+  const mine = [...myLogs.values()].map((log) => ({ ...log, isMine: true }));
+  const tagged = [...taggedLogs.values()]
+    .filter((log) => !myLogs.has(log.id))
+    .map((log) => ({ ...log, isMine: false }));
+  setStatsLogs([...mine, ...tagged]);
 }
 
 function rebuildWorkoutsByDate() {
@@ -422,6 +477,9 @@ function renderFeed() {
         : `<span class="author-avatar author-avatar-fallback" style="background:${avatarColorFor(log.displayName, log.color)}">${escapeHtml((log.displayName || "?").trim().charAt(0))}</span>`;
       const mine = log.uid === state.uid;
       const iAmTagged = !mine && (log.taggedUids || []).includes(state.uid);
+      const partPills = (log.parts || [])
+        .map((p) => `<span class="tag">${escapeHtml(p)}</span>`)
+        .join("");
       const tagPills = (log.taggedMembers || [])
         .map((m) => `<span class="tag ${m.uid === state.uid ? "tag-accent" : ""}">🏷 ${escapeHtml(m.displayName)}</span>`)
         .join("");
@@ -437,13 +495,47 @@ function renderFeed() {
             </span>
           </div>
           <div class="feed-card-meta">${escapeHtml(log.date)} · ${log.duration}분 · ${escapeHtml(log.location)}</div>
-          ${tagPills ? `<div class="feed-card-tags">${tagPills}</div>` : ""}
+          ${partPills || tagPills ? `<div class="feed-card-tags">${partPills}${tagPills}</div>` : ""}
           ${log.memo ? `<div class="feed-card-memo">${escapeHtml(log.memo)}</div>` : ""}
           ${log.feedback ? `<div class="feed-card-feedback">🔧 ${escapeHtml(log.feedback)}</div>` : ""}
+          ${renderReactions(log.id)}
         </div>
       </div>`;
     })
     .join("");
+}
+
+function renderReactions(logId) {
+  const byUser = reactionsByLog.get(logId) || new Map();
+  const mine = byUser.get(state.uid)?.emojis || [];
+  const buttons = REACTIONS.map(({ key, emoji }) => {
+    const count = [...byUser.values()].filter((r) => r.emojis.includes(key)).length;
+    const active = mine.includes(key);
+    return `<button type="button" class="reaction-btn ${active ? "active" : ""}" data-log-id="${logId}" data-reaction="${key}" aria-pressed="${active}">
+      ${emoji}${count ? ` <span class="reaction-count">${count}</span>` : ""}
+    </button>`;
+  }).join("");
+
+  const names = [...byUser.entries()].map(([uid, r]) => (uid === state.uid ? "나" : r.displayName));
+  const who = names.length
+    ? `<span class="reaction-who">${escapeHtml(names.slice(0, 3).join(", "))}${names.length > 3 ? ` 외 ${names.length - 3}명` : ""}</span>`
+    : "";
+  return `<div class="reaction-row">${buttons}${who}</div>`;
+}
+
+async function onToggleReaction(logId, key) {
+  const current = reactionsByLog.get(logId)?.get(state.uid)?.emojis || [];
+  const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+  const reactionRef = doc(db, "groups", state.groupId, "reactions", `${logId}_${state.uid}`);
+  try {
+    if (next.length) {
+      await setDoc(reactionRef, { logId, uid: state.uid, displayName: state.displayName, emojis: next });
+    } else {
+      await deleteDoc(reactionRef);
+    }
+  } catch (err) {
+    showToast("리액션을 저장하지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
 }
 
 async function onDeleteWorkout(id) {

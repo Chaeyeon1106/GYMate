@@ -32,6 +32,48 @@ let unsubscribe = null;
 let unsubBadges = [];
 let restingSelected = false;
 
+// 방문 예정시간 빠른 선택: 최근에 저장한 시간(이 기기에 기억)을 먼저, 모자라면 기본 시간으로 채운다.
+const DEFAULT_TIMES = ["07:00", "19:00", "20:00"];
+const MAX_TIME_CHIPS = 4;
+
+function recentTimesKey() {
+  return `gymate-recent-times-${state.uid}`;
+}
+
+function getRecentTimes() {
+  try {
+    const list = JSON.parse(localStorage.getItem(recentTimesKey()) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberTime(time) {
+  const list = [time, ...getRecentTimes().filter((t) => t !== time)].slice(0, 3);
+  try {
+    localStorage.setItem(recentTimesKey(), JSON.stringify(list));
+  } catch {
+    // 저장이 막힌 환경(사생활 보호 모드 등)이면 기본 시간만 보여준다
+  }
+}
+
+function renderTimeChips() {
+  const times = [...new Set([...getRecentTimes(), ...DEFAULT_TIMES])].slice(0, MAX_TIME_CHIPS);
+  const wrap = $("schedule-time-chips");
+  wrap.innerHTML = times
+    .map((t) => `<button type="button" class="location-chip" data-time="${escapeHtml(t)}">${escapeHtml(t)}</button>`)
+    .join("");
+  syncTimeChips();
+}
+
+function syncTimeChips() {
+  const current = $("schedule-time").value;
+  document.querySelectorAll("#schedule-time-chips .location-chip").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.time === current);
+  });
+}
+
 // 운동 인증(누가 올렸는지) 캘린더 표시용
 let groupWorkouts = new Map(); // id -> {date, uid, displayName, color}
 let myWorkouts = new Map();
@@ -71,6 +113,13 @@ export function initCalendar() {
   $("add-schedule-btn").addEventListener("click", openScheduleModal);
   $("schedule-resting-toggle").addEventListener("click", () => setResting(!restingSelected));
   $("schedule-form").addEventListener("submit", onScheduleSubmit);
+  $("schedule-time-chips").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-time]");
+    if (!chip) return;
+    $("schedule-time").value = chip.dataset.time;
+    syncTimeChips();
+  });
+  $("schedule-time").addEventListener("input", syncTimeChips);
   $("schedule-delete-btn").addEventListener("click", onScheduleDelete);
   $("today-date-label").textContent = formatDateLabel(todayStr());
   $("quick-schedule-btn").addEventListener("click", () => {
@@ -286,6 +335,7 @@ function setResting(resting) {
   restingSelected = resting;
   $("schedule-resting-toggle").classList.toggle("active", resting);
   $("schedule-time").classList.toggle("hidden", resting);
+  $("schedule-time-chips").classList.toggle("hidden", resting);
   $("schedule-time").required = !resting;
 }
 
@@ -312,6 +362,7 @@ function openScheduleModal(editId) {
     setResting(false);
   }
 
+  renderTimeChips();
   openModal("modal-schedule");
 }
 
@@ -332,6 +383,7 @@ async function onScheduleSubmit(e) {
       note,
       resting: restingSelected,
     });
+    if (!restingSelected) rememberTime(time);
     closeModal("modal-schedule");
     showToast(restingSelected ? "쉬는 날로 등록했어요 😴" : "일정을 저장했어요");
   } catch (err) {
