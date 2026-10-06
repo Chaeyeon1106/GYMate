@@ -47,11 +47,15 @@ let selectedTaggedMembers = []; // [{uid, displayName, color}]
 let selectedParts = new Set(); // 운동 부위 (하체/등/...)
 // 리액션: groups/{groupId}/reactions/{logId}_{uid} = { logId, uid, displayName, emojis: [...] }
 let reactionsByLog = new Map(); // logId -> Map(uid -> { displayName, emojis })
-const REACTIONS = [
+const BASE_REACTIONS = [
   { key: "like", emoji: "👍" },
   { key: "fire", emoji: "🔥" },
   { key: "muscle", emoji: "💪" },
 ];
+// 기본 리액션 + 이 그룹 전용 이모지 (전용 이모지는 이모지 자체를 key로 저장)
+function getReactions() {
+  return [...BASE_REACTIONS, ...(state.reactionEmojis || []).map((e) => ({ key: e, emoji: e }))];
+}
 let unsubFeed = [];
 
 let currentWeekStart = startOfWeek(new Date());
@@ -372,6 +376,11 @@ export function reloadWorkouts() {
   subscribeFeed();
 }
 
+// 그룹 전용 리액션이 바뀌었을 때 피드 버튼만 다시 그린다.
+export function rerenderWorkoutFeed() {
+  renderFeed();
+}
+
 function getAllItems() {
   const merged = new Map([...groupLogs, ...myLogs, ...taggedLogs]);
   return [...merged.values()];
@@ -508,10 +517,10 @@ function renderFeed() {
 function renderReactions(logId) {
   const byUser = reactionsByLog.get(logId) || new Map();
   const mine = byUser.get(state.uid)?.emojis || [];
-  const buttons = REACTIONS.map(({ key, emoji }) => {
+  const buttons = getReactions().map(({ key, emoji }) => {
     const count = [...byUser.values()].filter((r) => r.emojis.includes(key)).length;
     const active = mine.includes(key);
-    return `<button type="button" class="reaction-btn ${active ? "active" : ""}" data-log-id="${logId}" data-reaction="${key}" aria-pressed="${active}">
+    return `<button type="button" class="reaction-btn ${active ? "active" : ""}" data-log-id="${logId}" data-reaction="${escapeHtml(key)}" aria-pressed="${active}">
       ${emoji}${count ? ` <span class="reaction-count">${count}</span>` : ""}
     </button>`;
   }).join("");

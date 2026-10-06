@@ -15,6 +15,7 @@ export const state = {
   groupOwnerUid: null,
   joinCode: null,
   memberUids: [],
+  reactionEmojis: [], // 지금 그룹의 전용 리액션 이모지
 };
 
 export function resetState() {
@@ -31,4 +32,5 @@ export function resetState() {
   state.groupOwnerUid = null;
   state.joinCode = null;
   state.memberUids = [];
+  state.reactionEmojis = [];
 }

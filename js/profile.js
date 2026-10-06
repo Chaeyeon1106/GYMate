@@ -5,8 +5,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-storage.js";
 import { storage } from "./firebase-init.js";
 import { state } from "./state.js";
-import { saveProfile, saveGoal, saveNotifyPref, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
+import { saveProfile, saveGoal, saveNotifyPref, saveGroupReactionEmojis, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
 import { $, showScreen, showToast, showLoading, escapeHtml, avatarColorFor, applyPendingJoinCode } from "./utils.js";
+import { rerenderWorkoutFeed } from "./workouts.js";
 import { enablePush, disablePush, getNotificationPermission, isPushEnabledLocally } from "./push.js";
 
 let selectedAvatarFile = null;
@@ -33,6 +34,14 @@ export function initProfile() {
     $("group-name-edit-row").classList.remove("hidden");
   });
   $("group-name-save-btn").addEventListener("click", onSaveGroupName);
+  $("group-reaction-add-btn").addEventListener("click", onAddGroupReaction);
+  $("group-reaction-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") onAddGroupReaction();
+  });
+  $("group-reaction-list").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-remove-emoji]");
+    if (btn) onRemoveGroupReaction(btn.dataset.removeEmoji);
+  });
 
   $("add-group-btn").addEventListener("click", () => {
     $("group-back-btn").classList.remove("hidden");
@@ -277,6 +286,7 @@ export async function renderGroupCard() {
   $("group-name-edit-btn").classList.toggle("hidden", state.uid !== state.groupOwnerUid);
   $("delete-group-btn").classList.toggle("hidden", state.uid !== state.groupOwnerUid);
   $("member-count").textContent = state.memberUids.length;
+  renderGroupReactions();
 
   const members = await loadGroupMembers(state.memberUids);
   $("member-list").innerHTML = members
@@ -295,6 +305,78 @@ export async function renderGroupCard() {
       </div>`;
     })
     .join("");
+}
+
+const BASE_REACTION_EMOJIS = ["👍", "🔥", "💪"];
+const MAX_GROUP_REACTIONS = 3;
+
+function renderGroupReactions() {
+  const isOwner = state.uid === state.groupOwnerUid;
+  const emojis = state.reactionEmojis || [];
+  $("group-reaction-add-row").classList.toggle("hidden", !isOwner || emojis.length >= MAX_GROUP_REACTIONS);
+  $("group-reactions-hint").textContent = isOwner
+    ? `운동인증에 기본 👍🔥💪 말고 이 그룹에서만 쓰는 이모지를 최대 ${MAX_GROUP_REACTIONS}개까지 추가할 수 있어요`
+    : emojis.length
+    ? "그룹장이 정한 이 그룹 전용 리액션이에요"
+    : "그룹장이 이 그룹 전용 리액션 이모지를 추가할 수 있어요";
+  $("group-reaction-list").innerHTML = emojis
+    .map(
+      (e) => `<span class="location-chip group-reaction-chip">${escapeHtml(e)}${
+        isOwner ? ` <button type="button" class="chip-remove" data-remove-emoji="${escapeHtml(e)}" aria-label="${escapeHtml(e)} 삭제">✕</button>` : ""
+      }</span>`
+    )
+    .join("");
+}
+
+// 입력값에서 첫 번째 글자(이모지 1개)만 꺼낸다. 이모지가 아니면 null.
+function firstEmoji(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const first = typeof Intl !== "undefined" && Intl.Segmenter
+    ? new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(trimmed)[Symbol.iterator]().next().value.segment
+    : Array.from(trimmed)[0];
+  return /\p{Extended_Pictographic}/u.test(first) ? first : null;
+}
+
+async function saveGroupReactions(next, message) {
+  showLoading(true);
+  try {
+    await saveGroupReactionEmojis(state.groupId, next);
+    state.reactionEmojis = next;
+    renderGroupReactions();
+    rerenderWorkoutFeed();
+    showToast(message);
+  } catch (err) {
+    showToast("저장하지 못했어요. 그룹장만 바꿀 수 있어요.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function onAddGroupReaction() {
+  const emoji = firstEmoji($("group-reaction-input").value);
+  if (!emoji) {
+    showToast("이모지 1개를 입력해주세요");
+    return;
+  }
+  const current = state.reactionEmojis || [];
+  if (current.includes(emoji) || BASE_REACTION_EMOJIS.includes(emoji)) {
+    showToast("이미 있는 리액션이에요");
+    return;
+  }
+  if (current.length >= MAX_GROUP_REACTIONS) {
+    showToast(`최대 ${MAX_GROUP_REACTIONS}개까지 추가할 수 있어요`);
+    return;
+  }
+  $("group-reaction-input").value = "";
+  await saveGroupReactions([...current, emoji], `${emoji} 리액션을 추가했어요`);
+}
+
+async function onRemoveGroupReaction(emoji) {
+  await saveGroupReactions(
+    (state.reactionEmojis || []).filter((e) => e !== emoji),
+    `${emoji} 리액션을 뺐어요`
+  );
 }
 
 async function onSaveGroupName() {
