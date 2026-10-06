@@ -8,6 +8,7 @@ export const state = {
   photoURL: "",
   bio: "",
   goal: "",
+  notifyPrefs: {},
   groupIds: [],
   groupId: null,
   groupName: null,
@@ -23,6 +24,7 @@ export function resetState() {
   state.photoURL = "";
   state.bio = "";
   state.goal = "";
+  state.notifyPrefs = {};
   state.groupIds = [];
   state.groupId = null;
   state.groupName = null;

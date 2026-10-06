@@ -1206,6 +1206,27 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent);
 }
 
+.notify-prefs-title { margin-top: 14px; }
+.notify-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.notify-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+.notify-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .visibility-toggle {
   display: flex;
   gap: 8px;

@@ -336,6 +336,7 @@ onAuthStateChanged(auth, async (user) => {
     state.photoURL = profile.photoURL || "";
     state.bio = profile.bio || "";
     state.goal = profile.goal || "";
+    state.notifyPrefs = profile.notifyPrefs || {};
     state.groupIds = profile.groupIds || [];
 
     if (!state.groupIds.length) {

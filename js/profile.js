@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-storage.js";
 import { storage } from "./firebase-init.js";
 import { state } from "./state.js";
-import { saveProfile, saveGoal, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
+import { saveProfile, saveGoal, saveNotifyPref, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
 import { $, showScreen, showToast, showLoading, escapeHtml, avatarColorFor, applyPendingJoinCode } from "./utils.js";
 import { enablePush, disablePush, getNotificationPermission, isPushEnabledLocally } from "./push.js";
 
@@ -47,6 +47,12 @@ export function initProfile() {
   $("enable-push-btn").addEventListener("click", onEnablePush);
   $("disable-push-btn").addEventListener("click", onDisablePush);
   refreshPushStatus();
+
+  document.querySelectorAll("[data-notify-pref]").forEach((box) => {
+    const type = box.dataset.notifyPref;
+    box.checked = state.notifyPrefs[type] === true;
+    box.addEventListener("change", () => onToggleNotifyPref(box, type));
+  });
 
   renderGroupCard();
 }
@@ -169,6 +175,17 @@ async function onDisablePush() {
     showToast(err.message);
   } finally {
     showLoading(false);
+  }
+}
+
+async function onToggleNotifyPref(box, type) {
+  const enabled = box.checked;
+  try {
+    await saveNotifyPref(state.uid, type, enabled);
+    state.notifyPrefs = { ...state.notifyPrefs, [type]: enabled };
+  } catch (err) {
+    box.checked = !enabled;
+    showToast("알림 설정을 저장하지 못했어요. 다시 시도해주세요.");
   }
 }
 

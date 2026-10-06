@@ -184,6 +184,11 @@ export async function saveGoal(uid, goal) {
   await updateDoc(doc(db, "users", uid), { goal });
 }
 
+// 알림 종류별 수신 여부. 체크하지 않은(없는) 항목은 서버에서 알림을 보내지 않는다.
+export async function saveNotifyPref(uid, type, enabled) {
+  await updateDoc(doc(db, "users", uid), { [`notifyPrefs.${type}`]: enabled });
+}
+
 export async function saveProfile(uid, { displayName, bio, photoURL }) {
   await updateDoc(doc(db, "users", uid), { displayName, bio, photoURL });
 }
