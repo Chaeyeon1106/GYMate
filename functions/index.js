@@ -8,11 +8,13 @@ initializeApp();
 const db = getFirestore();
 
 // 여러 uid의 fcmTokens를 모아 중복 제거해서 돌려준다.
-async function getTokensForUids(uids) {
+// 설정(마이 탭)에서 해당 알림 종류(type)를 체크한 사람만 포함한다 — 체크 안 했으면 안 보냄.
+async function getTokensForUids(uids, type) {
   if (!uids.length) return [];
   const snaps = await Promise.all(uids.map((uid) => db.collection("users").doc(uid).get()));
   const tokens = [];
   snaps.forEach((snap) => {
+    if (snap.data()?.notifyPrefs?.[type] !== true) return;
     const list = snap.data()?.fcmTokens;
     if (Array.isArray(list)) tokens.push(...list);
   });
@@ -71,7 +73,7 @@ exports.onChatMessageCreated = onDocumentCreated(
     if (!group) return;
 
     const recipientUids = (group.memberUids || []).filter((uid) => uid !== msg.uid);
-    const tokens = await getTokensForUids(recipientUids);
+    const tokens = await getTokensForUids(recipientUids, "chat");
     logger.info(`채팅 알림 대상 ${recipientUids.length}명, 토큰 ${tokens.length}개`, { recipientUids });
 
     await sendAndCleanup(
@@ -95,7 +97,7 @@ exports.onScheduleCreated = onDocumentCreated(
     if (!group) return;
 
     const recipientUids = (group.memberUids || []).filter((uid) => uid !== entry.uid);
-    const tokens = await getTokensForUids(recipientUids);
+    const tokens = await getTokensForUids(recipientUids, "schedule");
 
     const body = entry.resting
       ? `${entry.date}엔 쉰대요 😴`
@@ -118,7 +120,7 @@ exports.onWorkoutLogCreated = onDocumentCreated(
     const { groupId, logId } = event.params;
 
     const taggedUids = (log.taggedUids || []).filter((uid) => uid !== log.uid);
-    const tokens = await getTokensForUids(taggedUids);
+    const tokens = await getTokensForUids(taggedUids, "tag");
 
     await sendAndCleanup(
       tokens,
