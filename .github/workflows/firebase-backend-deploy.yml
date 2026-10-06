@@ -1,0 +1,63 @@
+# main에 보안 규칙·Cloud Functions 변경이 머지되면 Firebase에 자동 배포한다.
+#  1) Firestore / Storage 보안 규칙
+#  2) Cloud Functions (푸시 알림)
+# 코드에 없는 함수가 Firebase에 남아 있으면(예: 예전에 직접 배포한 함수) 자동 배포는
+# 삭제하지 않고 실패하면서 그 함수 이름을 로그에 남긴다. 확인 후 지워도 되면
+# Actions 탭에서 이 워크플로를 수동 실행(Run workflow)하면서
+# "delete_missing_functions"를 체크하면 삭제까지 진행한다.
+name: Deploy rules & functions to Firebase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - storage.rules
+      - firebase.json
+      - functions/**
+      - .github/workflows/firebase-backend-deploy.yml
+  workflow_dispatch:
+    inputs:
+      delete_missing_functions:
+        description: "코드에 없는 함수를 Firebase에서 삭제 (--force)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: firebase-backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret 미등록 안내
+        if: env.HAS_SECRET != 'true'
+        run: echo "::warning::FIREBASE_SERVICE_ACCOUNT secret이 없어 배포를 건너뜁니다."
+
+      - uses: actions/setup-node@v4
+        if: env.HAS_SECRET == 'true'
+        with:
+          node-version: 20
+
+      - name: Install functions dependencies
+        if: env.HAS_SECRET == 'true'
+        run: npm ci
+        working-directory: functions
+
+      - uses: google-github-actions/auth@v2
+        if: env.HAS_SECRET == 'true'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy security rules
+        if: env.HAS_SECRET == 'true'
+        run: npx --yes firebase-tools@latest deploy --only firestore:rules,storage --project gymate-6872e --non-interactive
+
+      - name: Deploy Cloud Functions
+        if: env.HAS_SECRET == 'true'
+        run: npx --yes firebase-tools@latest deploy --only functions --project gymate-6872e --non-interactive ${{ inputs.delete_missing_functions && '--force' || '' }}
