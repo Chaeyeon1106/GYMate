@@ -14,6 +14,7 @@ import { initCalendar, reloadCalendar } from "./calendar.js";
 import { initWorkouts, reloadWorkouts } from "./workouts.js";
 import { initMeals, reloadMeals } from "./meals.js";
 import { initProfile, renderGroupCard } from "./profile.js";
+import { initStats } from "./stats.js";
 import { initChat, reloadChat, onChatTabEnter } from "./chat.js";
 import {
   $,
@@ -282,6 +283,7 @@ async function enterApp(group) {
     initWorkouts();
     initMeals();
     initProfile();
+    initStats();
     initChat();
   } else {
     // 이미 앱을 쓰던 중 다른 그룹으로 전환한 경우: 이전 그룹 구독을 정리하고

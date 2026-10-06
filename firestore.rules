@@ -91,6 +91,18 @@ service cloud.firestore {
       allow update, delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
     }
 
+    // 운동인증 리액션(👍🔥💪): 문서ID = 기록ID_uid, 한 사람당 기록마다 문서 하나.
+    // groupId가 경로에 고정된 하위 컬렉션이라 isMember() 검사가 list 쿼리에도 적용된다.
+    match /groups/{groupId}/reactions/{reactionId} {
+      allow read: if isMember(groupId);
+      allow create, update: if isMember(groupId) &&
+        request.resource.data.uid == request.auth.uid &&
+        reactionId == request.resource.data.logId + '_' + request.auth.uid &&
+        request.resource.data.emojis is list &&
+        request.resource.data.emojis.size() <= 3;
+      allow delete: if isMember(groupId) && resource.data.uid == request.auth.uid;
+    }
+
     match /groups/{groupId}/mealLogs/{logId} {
       allow read: if isSignedIn() &&
         (resource.data.visibility == 'group' || resource.data.uid == request.auth.uid);
