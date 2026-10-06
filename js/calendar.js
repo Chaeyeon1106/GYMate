@@ -241,7 +241,7 @@ function renderDayDetail(dateStr) {
   const entries = scheduleByDate[dateStr] || [];
 
   if (!entries.length) {
-    list.innerHTML = `<p class="empty-hint">아직 등록된 방문 일정이 없어요.</p>`;
+    list.innerHTML = `<p class="empty-hint">아직 등록된 예정 시간이 없어요.</p>`;
   } else {
     list.innerHTML = entries
       .map((e) => {

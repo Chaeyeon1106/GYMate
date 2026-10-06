@@ -100,10 +100,10 @@
       <section id="tab-calendar" class="tab-panel active">
         <div class="today-upload-card">
           <div>
-            <p class="card-title">오늘 방문 시간 등록하기</p>
+            <p class="card-title">오늘 갈 시간 정하기</p>
             <p class="card-sub" id="today-date-label"></p>
           </div>
-          <button id="quick-schedule-btn" class="btn-accent">🕐 방문시간 등록</button>
+          <button id="quick-schedule-btn" class="btn-accent">🕐 시간 예약</button>
         </div>
 
         <div class="calendar-card">
@@ -124,7 +124,7 @@
             <button type="button" id="day-detail-close" class="icon-btn">✕</button>
           </div>
           <div id="day-schedule-list" class="schedule-list"></div>
-          <button type="button" id="add-schedule-btn" class="btn-secondary full-width">+ 내 방문 시간 등록</button>
+          <button type="button" id="add-schedule-btn" class="btn-secondary full-width">+ 내 예정 시간 등록</button>
 
           <div id="day-logs-preview" class="day-logs-preview"></div>
         </div>
@@ -134,7 +134,7 @@
       <section id="tab-workouts" class="tab-panel">
         <div class="today-upload-card">
           <div>
-            <p class="card-title">오늘의 운동 기록 추가</p>
+            <p class="card-title">오늘 한 운동 인증하기</p>
             <p class="card-sub" id="workout-today-date-label"></p>
           </div>
           <button id="quick-photo-btn" class="btn-accent">📸 인증사진 올리기</button>
@@ -267,8 +267,8 @@
     </main>
 
     <nav class="bottom-nav">
-      <button type="button" class="nav-btn active" data-tab="tab-calendar"><span class="nav-icon">📅</span>캘린더</button>
-      <button type="button" class="nav-btn" data-tab="tab-workouts"><span class="nav-icon">🏋️</span>운동기록</button>
+      <button type="button" class="nav-btn active" data-tab="tab-calendar"><span class="nav-icon">📅</span>운동계획</button>
+      <button type="button" class="nav-btn" data-tab="tab-workouts"><span class="nav-icon">🏋️</span>운동인증</button>
       <button type="button" class="nav-btn" data-tab="tab-meals"><span class="nav-icon">🍱</span>식단</button>
       <button type="button" class="nav-btn" data-tab="tab-chat"><span class="nav-icon">💬</span>채팅</button>
       <button type="button" class="nav-btn" data-tab="tab-profile"><span class="nav-icon">👤</span>마이</button>
@@ -279,7 +279,7 @@
   <div id="modal-schedule" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>방문 시간 등록</h3>
+        <h3>운동 갈 시간 예약</h3>
         <button type="button" class="icon-btn modal-close" data-modal="modal-schedule">✕</button>
       </div>
       <form id="schedule-form">
