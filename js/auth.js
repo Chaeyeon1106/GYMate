@@ -198,6 +198,11 @@ export async function saveGroupReactionEmojis(groupId, emojis) {
   await updateDoc(doc(db, "groups", groupId), { reactions: emojis });
 }
 
+// 그룹장이 없는 그룹에서 내가 그룹장을 맡는다 (보안 규칙 (4)번 경우)
+export async function claimGroupOwner(groupId, uid) {
+  await updateDoc(doc(db, "groups", groupId), { ownerUid: uid });
+}
+
 export async function renameGroup(groupId, name) {
   await updateDoc(doc(db, "groups", groupId), { name });
 }

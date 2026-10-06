@@ -49,6 +49,13 @@ service cloud.firestore {
          request.resource.data.memberUids.size() > 0 &&
          resource.data.memberUids.hasAll(request.resource.data.memberUids) &&
          request.resource.data.ownerUid in request.resource.data.memberUids)
+        ||
+        // (4) 그룹장이 없는 그룹(ownerUid가 없거나 이미 탈퇴한 사람)에서 그룹원이
+        // 스스로 그룹장을 맡는 경우 — ownerUid만 자기 uid로 바꿀 수 있다.
+        (request.auth.uid in resource.data.memberUids &&
+         (!('ownerUid' in resource.data) || !(resource.data.ownerUid in resource.data.memberUids)) &&
+         request.resource.data.ownerUid == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid']))
       );
       // 삭제는 (1) 그룹의 마지막 한 명이 탈퇴하는 경우, 또는 (2) 그룹장이
       // "잘못 만든 그룹 삭제하기"로 인원 수와 상관없이 통째로 삭제하는

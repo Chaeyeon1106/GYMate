@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-storage.js";
 import { storage } from "./firebase-init.js";
 import { state } from "./state.js";
-import { saveProfile, saveGoal, saveNotifyPref, saveGroupReactionEmojis, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
+import { saveProfile, saveGoal, saveNotifyPref, saveGroupReactionEmojis, claimGroupOwner, renameGroup, leaveGroup, deleteGroup, loadGroupMembers, loadUserGroups } from "./auth.js";
 import { $, showScreen, showToast, showLoading, escapeHtml, avatarColorFor, applyPendingJoinCode } from "./utils.js";
 import { rerenderWorkoutFeed } from "./workouts.js";
 import { enablePush, disablePush, getNotificationPermission, isPushEnabledLocally } from "./push.js";
@@ -34,6 +34,7 @@ export function initProfile() {
     $("group-name-edit-row").classList.remove("hidden");
   });
   $("group-name-save-btn").addEventListener("click", onSaveGroupName);
+  $("claim-owner-btn").addEventListener("click", onClaimOwner);
   $("group-reaction-add-btn").addEventListener("click", onAddGroupReaction);
   $("group-reaction-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") onAddGroupReaction();
@@ -286,6 +287,8 @@ export async function renderGroupCard() {
   $("group-name-edit-btn").classList.toggle("hidden", state.uid !== state.groupOwnerUid);
   $("delete-group-btn").classList.toggle("hidden", state.uid !== state.groupOwnerUid);
   $("member-count").textContent = state.memberUids.length;
+  const hasOwner = !!state.groupOwnerUid && state.memberUids.includes(state.groupOwnerUid);
+  $("claim-owner-btn").classList.toggle("hidden", hasOwner);
   renderGroupReactions();
 
   const members = await loadGroupMembers(state.memberUids);
@@ -378,6 +381,21 @@ async function onRemoveGroupReaction(emoji) {
     (state.reactionEmojis || []).filter((e) => e !== emoji),
     `${emoji} 리액션을 뺐어요`
   );
+}
+
+async function onClaimOwner() {
+  if (!confirm("이 그룹에는 지금 그룹장이 없어요. 내가 그룹장을 맡을까요?\n(그룹 이름 변경 · 리액션 수정 · 그룹 삭제를 할 수 있게 돼요)")) return;
+  showLoading(true);
+  try {
+    await claimGroupOwner(state.groupId, state.uid);
+    state.groupOwnerUid = state.uid;
+    await renderGroupCard();
+    showToast("그룹장이 됐어요 👑");
+  } catch (err) {
+    showToast("그룹장을 맡지 못했어요. 잠시 후 다시 시도해주세요.");
+  } finally {
+    showLoading(false);
+  }
 }
 
 async function onSaveGroupName() {
