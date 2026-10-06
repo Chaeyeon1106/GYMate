@@ -32,9 +32,7 @@ let unsubscribe = null;
 let unsubBadges = [];
 let restingSelected = false;
 
-// 방문 예정시간 빠른 선택: 최근에 저장한 시간(이 기기에 기억)을 먼저, 모자라면 기본 시간으로 채운다.
-const DEFAULT_TIMES = ["07:00", "19:00", "20:00"];
-const MAX_TIME_CHIPS = 4;
+// 방문 예정시간 빠른 선택: 최근에 저장한 시간(이 기기에 기억, 최대 3개)만 보여준다.
 
 function recentTimesKey() {
   return `gymate-recent-times-${state.uid}`;
@@ -59,7 +57,7 @@ function rememberTime(time) {
 }
 
 function renderTimeChips() {
-  const times = [...new Set([...getRecentTimes(), ...DEFAULT_TIMES])].slice(0, MAX_TIME_CHIPS);
+  const times = getRecentTimes();
   const wrap = $("schedule-time-chips");
   wrap.innerHTML = times
     .map((t) => `<button type="button" class="location-chip" data-time="${escapeHtml(t)}">${escapeHtml(t)}</button>`)

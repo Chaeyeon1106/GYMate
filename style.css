@@ -1419,3 +1419,4 @@ input:focus, textarea:focus, select:focus {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+#schedule-time-chips:empty { display: none; }
