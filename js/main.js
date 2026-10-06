@@ -268,6 +268,7 @@ async function enterApp(group) {
   state.groupOwnerUid = group.ownerUid;
   state.memberUids = group.memberUids || [];
   state.joinCode = group.joinCode;
+  state.reactionEmojis = group.reactionEmojis || [];
 
   $("user-name").textContent = state.displayName;
   $("invite-code-display").textContent = group.joinCode;

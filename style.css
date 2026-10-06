@@ -1420,3 +1420,18 @@ input:focus, textarea:focus, select:focus {
   to { transform: rotate(360deg); }
 }
 #schedule-time-chips:empty { display: none; }
+
+.group-reactions-title { margin-top: 18px; }
+#group-reaction-list:empty { display: none; }
+.group-reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+}
+.chip-remove {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 0 2px;
+}
+#group-reaction-add-row { margin-top: 8px; }
