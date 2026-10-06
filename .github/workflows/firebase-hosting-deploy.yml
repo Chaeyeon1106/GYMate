@@ -1,5 +1,5 @@
 # main 브랜치에 푸시(PR 머지 포함)되면 화면(HTML/CSS/JS)만 Firebase Hosting에 자동 배포한다.
-# Cloud Functions와 보안 규칙은 자동 배포하지 않는다 — 필요할 때 직접 firebase deploy 할 것.
+# 보안 규칙·Cloud Functions는 firebase-backend-deploy.yml이 따로 배포한다.
 # 필요한 설정: 저장소 Settings → Secrets and variables → Actions 에
 #   FIREBASE_SERVICE_ACCOUNT (Firebase 서비스 계정 JSON 키 내용 전체) 등록
 name: Deploy hosting to Firebase
