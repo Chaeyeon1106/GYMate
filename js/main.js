@@ -268,7 +268,8 @@ async function enterApp(group) {
   state.groupOwnerUid = group.ownerUid;
   state.memberUids = group.memberUids || [];
   state.joinCode = group.joinCode;
-  state.reactionEmojis = group.reactionEmojis || [];
+  // reactions: 그룹 리액션 전체 목록. 없으면 기본 👍🔥💪 (+ 예전 방식으로 추가했던 전용 이모지)
+  state.reactionEmojis = group.reactions || ["👍", "🔥", "💪", ...(group.reactionEmojis || [])];
 
   $("user-name").textContent = state.displayName;
   $("invite-code-display").textContent = group.joinCode;

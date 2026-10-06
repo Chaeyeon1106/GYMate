@@ -47,14 +47,12 @@ let selectedTaggedMembers = []; // [{uid, displayName, color}]
 let selectedParts = new Set(); // 운동 부위 (하체/등/...)
 // 리액션: groups/{groupId}/reactions/{logId}_{uid} = { logId, uid, displayName, emojis: [...] }
 let reactionsByLog = new Map(); // logId -> Map(uid -> { displayName, emojis })
-const BASE_REACTIONS = [
-  { key: "like", emoji: "👍" },
-  { key: "fire", emoji: "🔥" },
-  { key: "muscle", emoji: "💪" },
-];
-// 기본 리액션 + 이 그룹 전용 이모지 (전용 이모지는 이모지 자체를 key로 저장)
+// 처음 만든 👍🔥💪는 like/fire/muscle 이라는 key로 저장돼 있어서, 기존 리액션 수가 유지되도록
+// 그 셋은 예전 key를 계속 쓰고, 나머지 이모지는 이모지 자체를 key로 쓴다.
+const LEGACY_REACTION_KEYS = { "👍": "like", "🔥": "fire", "💪": "muscle" };
 function getReactions() {
-  return [...BASE_REACTIONS, ...(state.reactionEmojis || []).map((e) => ({ key: e, emoji: e }))];
+  const emojis = state.reactionEmojis?.length ? state.reactionEmojis : ["👍", "🔥", "💪"];
+  return emojis.map((e) => ({ key: LEGACY_REACTION_KEYS[e] || e, emoji: e }));
 }
 let unsubFeed = [];
 
