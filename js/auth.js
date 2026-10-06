@@ -193,9 +193,9 @@ export async function saveProfile(uid, { displayName, bio, photoURL }) {
   await updateDoc(doc(db, "users", uid), { displayName, bio, photoURL });
 }
 
-// 그룹 전용 리액션 이모지 (그룹장만 수정 — 기존 규칙의 "그룹장, 멤버 변화 없음" 업데이트로 허용됨)
+// 그룹 리액션 이모지 전체 목록 (그룹장만 수정 — 기존 규칙의 "그룹장, 멤버 변화 없음" 업데이트로 허용됨)
 export async function saveGroupReactionEmojis(groupId, emojis) {
-  await updateDoc(doc(db, "groups", groupId), { reactionEmojis: emojis });
+  await updateDoc(doc(db, "groups", groupId), { reactions: emojis });
 }
 
 export async function renameGroup(groupId, name) {

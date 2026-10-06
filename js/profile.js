@@ -307,22 +307,19 @@ export async function renderGroupCard() {
     .join("");
 }
 
-const BASE_REACTION_EMOJIS = ["👍", "🔥", "💪"];
-const MAX_GROUP_REACTIONS = 3;
+const MAX_GROUP_REACTIONS = 6;
 
 function renderGroupReactions() {
   const isOwner = state.uid === state.groupOwnerUid;
   const emojis = state.reactionEmojis || [];
   $("group-reaction-add-row").classList.toggle("hidden", !isOwner || emojis.length >= MAX_GROUP_REACTIONS);
   $("group-reactions-hint").textContent = isOwner
-    ? `운동인증에 기본 👍🔥💪 말고 이 그룹에서만 쓰는 이모지를 최대 ${MAX_GROUP_REACTIONS}개까지 추가할 수 있어요`
-    : emojis.length
-    ? "그룹장이 정한 이 그룹 전용 리액션이에요"
-    : "그룹장이 이 그룹 전용 리액션 이모지를 추가할 수 있어요";
+    ? `이 그룹 운동인증에 쓸 리액션이에요. ✕로 빼고, 최대 ${MAX_GROUP_REACTIONS}개까지 원하는 이모지로 바꿀 수 있어요`
+    : "그룹장이 정한 이 그룹 운동인증 리액션이에요";
   $("group-reaction-list").innerHTML = emojis
     .map(
       (e) => `<span class="location-chip group-reaction-chip">${escapeHtml(e)}${
-        isOwner ? ` <button type="button" class="chip-remove" data-remove-emoji="${escapeHtml(e)}" aria-label="${escapeHtml(e)} 삭제">✕</button>` : ""
+        isOwner && emojis.length > 1 ? ` <button type="button" class="chip-remove" data-remove-emoji="${escapeHtml(e)}" aria-label="${escapeHtml(e)} 삭제">✕</button>` : ""
       }</span>`
     )
     .join("");
@@ -360,7 +357,7 @@ async function onAddGroupReaction() {
     return;
   }
   const current = state.reactionEmojis || [];
-  if (current.includes(emoji) || BASE_REACTION_EMOJIS.includes(emoji)) {
+  if (current.includes(emoji)) {
     showToast("이미 있는 리액션이에요");
     return;
   }
@@ -373,6 +370,10 @@ async function onAddGroupReaction() {
 }
 
 async function onRemoveGroupReaction(emoji) {
+  if ((state.reactionEmojis || []).length <= 1) {
+    showToast("리액션은 최소 1개는 있어야 해요");
+    return;
+  }
   await saveGroupReactions(
     (state.reactionEmojis || []).filter((e) => e !== emoji),
     `${emoji} 리액션을 뺐어요`
